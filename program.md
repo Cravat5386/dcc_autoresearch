@@ -29,10 +29,15 @@ Each experiment runs on a single GPU. The training script runs for a **fixed tim
 - Modify `prepare.py`. It is read-only. It contains the fixed evaluation, data loading, tokenizer, and training constants (time budget, sequence length, etc).
 - Install new packages or add dependencies. You can only use what's already in `pyproject.toml`.
 - Modify the evaluation harness. The `evaluate_bpb` function in `prepare.py` is the ground truth metric.
+- Navigate outside the current working directory or read files outside this repository. Do not use `grep`, `find`, or `ls` on parent directories.
+- Execute any destructive shell commands (e.g., `rm -rf`, system reboots, or global environment changes).
+
+**Safety & Storage Constraints:**
+- **Storage:** Only save a model checkpoint (e.g., `.pt` file) if the `val_bpb` is strictly lower than the previous best experiment. You MUST overwrite the existing checkpoint file rather than creating a new file for every run. Do not spam the disk with gigabytes of model weights.
 
 **The goal is simple: get the lowest val_bpb.** Since the time budget is fixed, you don't need to worry about training time — it's always 5 minutes. Everything is fair game: change the architecture, the optimizer, the hyperparameters, the batch size, the model size. The only constraint is that the code runs without crashing and finishes within the time budget.
 
-**VRAM** is a soft constraint. Some increase is acceptable for meaningful val_bpb gains, but it should not blow up dramatically.
+**VRAM** is a soft constraint. Some increase is acceptable for meaningful val_bpb gains, but it should not blow up dramatically. You are running on an RTX 5000 Ada with 32GB of VRAM. If a run crashes with a CUDA Out of Memory (OOM) error, immediately reduce `DEVICE_BATCH_SIZE`, `TOTAL_BATCH_SIZE`, or the model `DEPTH` in `train.py` and try again.
 
 **Simplicity criterion**: All else being equal, simpler is better. A small improvement that adds ugly complexity is not worth it. Conversely, removing something and getting equal or better results is a great outcome — that's a simplification win. When evaluating whether to keep a change, weigh the complexity cost against the improvement magnitude. A 0.001 val_bpb improvement that adds 20 lines of hacky code? Probably not worth it. A 0.001 val_bpb improvement from deleting code? Definitely keep. An improvement of ~0 but much simpler code? Keep.
 
